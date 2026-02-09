@@ -1,85 +1,124 @@
-local c=setclipboard or toclipboard or (syn and syn.setclipboard) or (fluxus and fluxus.setclipboard)
-local Pl=game:GetService("Players")
-local lp=Pl.LocalPlayer
-local ch=lp.Character or lp.CharacterAdded:Wait()
-local h=ch:WaitForChild("Humanoid")
-local d=h:GetAppliedDescription()
-local ti,p,ip,mf,sf,gm = table.insert, pairs, ipairs, math.floor, string.format, string.gmatch
+local copy = setclipboard or toclipboard or (syn and syn.setclipboard) or (fluxus and fluxus.setclipboard)
 
-local function r(c)
-	return sf("Color3.fromRGB(%d, %d, %d)", mf(c.R*255+0.5), mf(c.G*255+0.5), mf(c.B*255+0.5))
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+local desc = humanoid:GetAppliedDescription()
+
+local function rgb(c)
+	return string.format("Color3.fromRGB(%d, %d, %d)",
+		math.floor(c.R * 255 + 0.5),
+		math.floor(c.G * 255 + 0.5),
+		math.floor(c.B * 255 + 0.5)
+	)
 end
 
-local bc=ch:FindFirstChildOfClass("BodyColors")
-local parts={"Head","LeftArm","RightArm","LeftLeg","RightLeg","Torso"}
-local colors={}
-for _,part in ip(parts) do colors[part.."Color3"]=bc and bc[part.."Color3"] or d[part.."Color"] end
+local bodyColors = char:FindFirstChildOfClass("BodyColors")
 
-local accessories={}
-for _,k in ip({"HatAccessory","HairAccessory","FaceAccessory","NeckAccessory","FrontAccessory","BackAccessory","WaistAccessory"}) do
-	local ok,v=pcall(function() return d[k] end)
-	if ok and typeof(v)=="string" then for id in gm(v,"%d+") do ti(accessories,tonumber(id)) end end
+local colors = {
+	HeadColor3 = bodyColors and bodyColors.HeadColor3 or desc.HeadColor,
+	LeftArmColor3 = bodyColors and bodyColors.LeftArmColor3 or desc.LeftArmColor,
+	RightArmColor3 = bodyColors and bodyColors.RightArmColor3 or desc.RightArmColor,
+	LeftLegColor3 = bodyColors and bodyColors.LeftLegColor3 or desc.LeftLegColor,
+	RightLegColor3 = bodyColors and bodyColors.RightLegColor3 or desc.RightLegColor,
+	TorsoColor3 = bodyColors and bodyColors.TorsoColor3 or desc.TorsoColor,
+}
+
+local accessoryProps = {
+	"HatAccessory",
+	"HairAccessory",
+	"FaceAccessory",
+	"NeckAccessory",
+	"FrontAccessory",
+	"BackAccessory",
+	"WaistAccessory",
+}
+
+local accessories = {}
+
+for _, prop in ipairs(accessoryProps) do
+	local ok, value = pcall(function()
+		return desc[prop]
+	end)
+	if ok and typeof(value) == "string" then
+		for id in value:gmatch("%d+") do
+			table.insert(accessories, tonumber(id))
+		end
+	end
 end
 
-local shirt=d.Shirt~=0 and d.Shirt or nil
-local pants=d.Pants~=0 and d.Pants or nil
+local shirt = desc.Shirt ~= 0 and desc.Shirt or nil
+local pants = desc.Pants ~= 0 and desc.Pants or nil
 
-local staticClothing = [[
-	["Clothing"] = {
-		"Roblox Breasts Clothing",
-		"Roblox Shirt",
-		"Roblox Butt Shirt",
-		"Roblox Pants",
-	},
-]]
-local staticPreset = [[
-	["Preset"] = {
-		Tone = "Base",
-		Face = false,
-		AccessorySizeLock = false,
-		BodyPartPhysics = false,
-		PhysicsObeyGravity = true,
-		RealtimeBodyTransparency = false,
-		PositionPhysicsMultiply = 1,
-		RotationPhysicsMultiply = 4,
-		BreastsScale = 1,
-		ButtsScale = 1,
-		LegsScale = 1,
-		BreastsType = 1,
-		TorsoType = 1,
-		ArmType = 1,
-		LegsType = 1,
-		ButtType = 1,
-		HardcoreHP = false,
-		TopHP = nil,
-		BottomHP = nil,
-		DamageSFX = nil,
-		Volume = nil,
-	},
-]]
+local out = {}
 
-local out={'["BUNDLE NAME HERE"] = {'}
+table.insert(out, '["BUNDLE NAME HERE"] = {')
 
-local bodyStr="\t[\"Body Color\"] = {\n"
-for k,v in p(colors) do bodyStr=bodyStr.."\t\t["..k.."] = "..r(v)..",\n" end
-bodyStr=bodyStr.."\t},\n"
-ti(out,bodyStr)
+table.insert(out, '\t["Body Color"] = {')
+for name, col in pairs(colors) do
+	table.insert(out, string.format('\t\t["%s"] = %s,', name, rgb(col)))
+end
+table.insert(out, '\t},\n')
 
-local accStr="\t[\"Accessory\"] = {\n"
-if #accessories>0 then for _,id in ip(accessories) do accStr=accStr.."\t\t"..id..",\n" end
-else accStr=accStr.."\t\t\n" end
-accStr=accStr.."\t},\n"
-ti(out,accStr)
+table.insert(out, '\t["Accessory"] = {')
+if #accessories > 0 then
+	for _, id in ipairs(accessories) do
+		table.insert(out, '\t\t' .. id .. ',')
+	end
+else
+	table.insert(out, '\t\t')
+end
+table.insert(out, '\t},\n')
 
-ti(out,"\t[\"Clothes\"] = {\n\t\t[\"Shirt\"] = "..(shirt or "nil")..",\n\t\t[\"Pants\"] = "..(pants or "nil")..",\n\t},\n")
+table.insert(out, '\t["Clothes"] = {')
+table.insert(out, '\t\t["Shirt"] = ' .. (shirt or "nil") .. ',')
+table.insert(out, '\t\t["Pants"] = ' .. (pants or "nil") .. ',')
+table.insert(out, '\t},\n')
 
-ti(out,"\t[\"TClothes\"] = {\n\t\t[\"Shirt\"] = nil,\n\t\t[\"Pants\"] = nil,\n\t},\n")
+table.insert(out, '\t["TClothes"] = {')
+table.insert(out, '\t\t["Shirt"] = nil,')
+table.insert(out, '\t\t["Pants"] = nil,')
+table.insert(out, '\t},\n')
 
-ti(out,staticClothing)
-ti(out,staticPreset)
+table.insert(out, '\t["Clothing"] = {')
+table.insert(out, '\t\t"Roblox Breasts Clothing",')
+table.insert(out, '\t\t"Roblox Shirt",')
+table.insert(out, '\t\t"Roblox Butt Shirt",')
+table.insert(out, '\t\t"Roblox Pants",')
+table.insert(out, '\t},\n')
 
-ti(out,'}')
+table.insert(out, '\t["Preset"] = {')
+table.insert(out, '\t\tTone = "Base",')
+table.insert(out, '\t\tFace = false,')
+table.insert(out, '\t\tAccessorySizeLock = false,')
+table.insert(out, '\t\tBodyPartPhysics = false,')
+table.insert(out, '\t\tPhysicsObeyGravity = true,')
+table.insert(out, '\t\tRealtimeBodyTransparency = false,')
+table.insert(out, '\t\tPositionPhysicsMultiply = 1,')
+table.insert(out, '\t\tRotationPhysicsMultiply = 4,')
+table.insert(out, '\t\tBreastsScale = 1,')
+table.insert(out, '\t\tButtsScale = 1,')
+table.insert(out, '\t\tLegsScale = 1,')
+table.insert(out, '\t\tBreastsType = 1,')
+table.insert(out, '\t\tTorsoType = 1,')
+table.insert(out, '\t\tArmType = 1,')
+table.insert(out, '\t\tLegsType = 1,')
+table.insert(out, '\t\tButtType = 1,')
+table.insert(out, '\t\tHardcoreHP = false,')
+table.insert(out, '\t\tTopHP = nil,')
+table.insert(out, '\t\tBottomHP = nil,')
+table.insert(out, '\t\tDamageSFX = nil,')
+table.insert(out, '\t\tVolume = nil,')
+table.insert(out, '\t},')
 
-local result=table.concat(out,"\n")
+table.insert(out, '}')
+
+local result = table.concat(out, "\n")
 print(result)
-if c then c(result) else warn("Clipboard not supported.") end
+
+if copy then
+	copy(result)
+else
+	warn("Clipboard not supported.")
+end
