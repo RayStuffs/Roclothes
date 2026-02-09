@@ -1,0 +1,85 @@
+local c=setclipboard or toclipboard or (syn and syn.setclipboard) or (fluxus and fluxus.setclipboard)
+local Pl=game:GetService("Players")
+local lp=Pl.LocalPlayer
+local ch=lp.Character or lp.CharacterAdded:Wait()
+local h=ch:WaitForChild("Humanoid")
+local d=h:GetAppliedDescription()
+local ti,p,ip,mf,sf,gm = table.insert, pairs, ipairs, math.floor, string.format, string.gmatch
+
+local function r(c)
+	return sf("Color3.fromRGB(%d, %d, %d)", mf(c.R*255+0.5), mf(c.G*255+0.5), mf(c.B*255+0.5))
+end
+
+local bc=ch:FindFirstChildOfClass("BodyColors")
+local parts={"Head","LeftArm","RightArm","LeftLeg","RightLeg","Torso"}
+local colors={}
+for _,part in ip(parts) do colors[part.."Color3"]=bc and bc[part.."Color3"] or d[part.."Color"] end
+
+local accessories={}
+for _,k in ip({"HatAccessory","HairAccessory","FaceAccessory","NeckAccessory","FrontAccessory","BackAccessory","WaistAccessory"}) do
+	local ok,v=pcall(function() return d[k] end)
+	if ok and typeof(v)=="string" then for id in gm(v,"%d+") do ti(accessories,tonumber(id)) end end
+end
+
+local shirt=d.Shirt~=0 and d.Shirt or nil
+local pants=d.Pants~=0 and d.Pants or nil
+
+local staticClothing = [[
+	["Clothing"] = {
+		"Roblox Breasts Clothing",
+		"Roblox Shirt",
+		"Roblox Butt Shirt",
+		"Roblox Pants",
+	},
+]]
+local staticPreset = [[
+	["Preset"] = {
+		Tone = "Base",
+		Face = false,
+		AccessorySizeLock = false,
+		BodyPartPhysics = false,
+		PhysicsObeyGravity = true,
+		RealtimeBodyTransparency = false,
+		PositionPhysicsMultiply = 1,
+		RotationPhysicsMultiply = 4,
+		BreastsScale = 1,
+		ButtsScale = 1,
+		LegsScale = 1,
+		BreastsType = 1,
+		TorsoType = 1,
+		ArmType = 1,
+		LegsType = 1,
+		ButtType = 1,
+		HardcoreHP = false,
+		TopHP = nil,
+		BottomHP = nil,
+		DamageSFX = nil,
+		Volume = nil,
+	},
+]]
+
+local out={'["BUNDLE NAME HERE"] = {'}
+
+local bodyStr="\t[\"Body Color\"] = {\n"
+for k,v in p(colors) do bodyStr=bodyStr.."\t\t["..k.."] = "..r(v)..",\n" end
+bodyStr=bodyStr.."\t},\n"
+ti(out,bodyStr)
+
+local accStr="\t[\"Accessory\"] = {\n"
+if #accessories>0 then for _,id in ip(accessories) do accStr=accStr.."\t\t"..id..",\n" end
+else accStr=accStr.."\t\t\n" end
+accStr=accStr.."\t},\n"
+ti(out,accStr)
+
+ti(out,"\t[\"Clothes\"] = {\n\t\t[\"Shirt\"] = "..(shirt or "nil")..",\n\t\t[\"Pants\"] = "..(pants or "nil")..",\n\t},\n")
+
+ti(out,"\t[\"TClothes\"] = {\n\t\t[\"Shirt\"] = nil,\n\t\t[\"Pants\"] = nil,\n\t},\n")
+
+ti(out,staticClothing)
+ti(out,staticPreset)
+
+ti(out,'}')
+
+local result=table.concat(out,"\n")
+print(result)
+if c then c(result) else warn("Clipboard not supported.") end
