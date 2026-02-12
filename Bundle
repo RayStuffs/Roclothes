@@ -71,6 +71,8 @@ else
 end
 table.insert(out, '\t},\n')
 
+table.insert(out, '\t["TailAccessory"] = nil,\n')
+
 table.insert(out, '\t["Clothes"] = {')
 table.insert(out, '\t\t["Shirt"] = ' .. (shirt or "nil") .. ',')
 table.insert(out, '\t\t["Pants"] = ' .. (pants or "nil") .. ',')
