@@ -29,6 +29,7 @@ local accessoryProps = {
 	"HatAccessory",
 	"HairAccessory",
 	"FaceAccessory",
+	"ShouldersAccessory",
 	"NeckAccessory",
 	"FrontAccessory",
 	"BackAccessory",
